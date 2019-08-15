@@ -1,11 +1,12 @@
 package com.st18rai.datewidget;
 
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.widget.RemoteViews;
 
 import java.text.SimpleDateFormat;
@@ -13,6 +14,8 @@ import java.util.Date;
 import java.util.Locale;
 
 public class DateWidget extends AppWidgetProvider {
+
+    private BroadcastReceiver receiver;
 
     static void updateAppWidget(Context context, AppWidgetManager appWidgetManager,
                                 int appWidgetId) {
@@ -42,23 +45,47 @@ public class DateWidget extends AppWidgetProvider {
     }
 
     @Override
-    public void onEnabled(Context context) {
-        // Enter relevant functionality for when the first widget is created
-        AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        Intent intent = new Intent(context, MyReceiver.class);
-        PendingIntent pi = PendingIntent.getBroadcast(context, 0, intent, 0);
+    public void onEnabled(final Context context) {
 
-        //After 3 seconds
-        am.setRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 100 * 3, 1000, pi);
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context ctx, Intent intent) {
+                if (intent.getAction().compareTo(Intent.ACTION_TIME_TICK) == 0) {
+                    // update widget time here using
+
+                    updateTime(ctx);
+
+                }
+            }
+        };
+
+        context.getApplicationContext().registerReceiver(receiver, new IntentFilter(Intent.ACTION_TIME_TICK));
+
+    }
+
+    private void updateTime(Context context) {
+
+        ComponentName thisWidget = new ComponentName(context, DateWidget.class);
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+
+        RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.date_widget);
+
+        Date now = new Date();
+        SimpleDateFormat hourFormat = new SimpleDateFormat("HH", Locale.getDefault());
+        SimpleDateFormat minuteFormat = new SimpleDateFormat("mm", Locale.getDefault());
+
+        views.setTextViewText(R.id.hour, hourFormat.format(now));
+        views.setTextViewText(R.id.minute, minuteFormat.format(now));
+
+        appWidgetManager.updateAppWidget(thisWidget, views);
+
     }
 
     @Override
     public void onDisabled(Context context) {
-        // Enter relevant functionality for when the last widget is disabled
-        Intent intent = new Intent(context, MyReceiver.class);
-        PendingIntent sender = PendingIntent.getBroadcast(context, 0, intent, 0);
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        alarmManager.cancel(sender);
+
+        if (receiver != null)
+            context.getApplicationContext().unregisterReceiver(receiver);
     }
 }
 
