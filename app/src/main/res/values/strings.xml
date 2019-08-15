@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Date Widget</string>
+    <string name="add_widget">Add widget</string>
+    <string name="set_widget_text">Set widget from your launcher!</string>
+</resources>
